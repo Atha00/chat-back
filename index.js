@@ -7,8 +7,6 @@ const io = require("socket.io")(http, {
   }
 });
 
-const getRandomFruitsName = require("random-fruits-name");
-
 // io.emit("connection", {
 //   someProperty: "some value",
 //   otherProperty: "other value"
@@ -19,34 +17,20 @@ io.on("connection", socket => {
   socket.nickname = name;
   socket.join("room1");
   const clients = socket.adapter.rooms.get("room1");
-  // console.log("clients =>", clients);
+
   for (const clientId of clients) {
-    // console.log("verif =>", clientId);
     //this is the socket of each client in the room.
     const clientSocket = io.sockets.sockets.get(clientId);
-    users.push(clientSocket.nickname);
+
+    users.push({ name: clientSocket.nickname, id: clientSocket.id });
   }
-  // console.log(users);
-  socket.on("user list", () => {
-    io.emit("user list", users);
+
+  socket.on("incoming user", () => {
+    io.emit("added entry to userList", users);
   });
-  // console.log(socket.rooms);
+
   socket.broadcast.emit("connection", name + " is connected");
-  // socket.on("name select", name => {
-  //     io.emit("name select", name)
-  //   })
-  socket.on("disconnect", () => {
-    console.log(users);
-    let index;
-    for (let i = 0; i < users.length; i++) {
-      if (users[i] === name) {
-        index = i;
-      }
-    }
-    users.splice(index, 1);
-    console.log(users);
-    io.emit("chat message", name + " disconnect");
-  });
+
   socket.on("chat message", msg => {
     io.emit("chat message", name + ": " + msg);
   });
@@ -57,6 +41,20 @@ io.on("connection", socket => {
 
   socket.on("clean alert typing", text => {
     socket.broadcast.emit("clean alert typing");
+  });
+  socket.on("disconnect", () => {
+    users.length = 0;
+    const clients = socket.adapter.rooms.get("room1");
+    if (clients) {
+      for (const clientId of clients) {
+        //this is the socket of each client in the room.
+        const clientSocket = io.sockets.sockets.get(clientId);
+
+        users.push({ name: clientSocket.nickname, id: clientSocket.id });
+      }
+    }
+
+    io.emit("user leaving", name + " disconnect", users);
   });
 });
 
