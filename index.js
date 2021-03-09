@@ -16,6 +16,7 @@ io.on("connection", socket => {
   const { name } = socket.handshake.query;
   socket.nickname = name;
   socket.join("room1");
+  // console.log(socket.rooms);
   const clients = socket.adapter.rooms.get("room1");
 
   for (const clientId of clients) {
@@ -41,6 +42,9 @@ io.on("connection", socket => {
 
   socket.on("clean alert typing", text => {
     socket.broadcast.emit("clean alert typing");
+  });
+  socket.on("send PM", id => {
+    io.to(`${id}`).emit("yo ma gueule !");
   });
   socket.on("disconnect", () => {
     users.length = 0;
