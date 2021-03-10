@@ -13,18 +13,33 @@ const io = require("socket.io")(http, {
 // });
 io.on("connection", socket => {
   let users = [];
-  const { name } = socket.handshake.query;
+  const { name, text } = socket.handshake.query;
+  console.log("name ==>", name);
+  console.log("text ===>", text);
   socket.nickname = name;
-  socket.join("room1");
-  // console.log(socket.rooms);
-  const clients = socket.adapter.rooms.get("room1");
+  if (text === "undefined") {
+    users.length = 0;
+    socket.join("room1");
+    const clients = socket.adapter.rooms.get("room1");
+    console.log("users in room1 ===>", clients);
 
-  for (const clientId of clients) {
-    //this is the socket of each client in the room.
-    const clientSocket = io.sockets.sockets.get(clientId);
-
-    users.push({ name: clientSocket.nickname, id: clientSocket.id });
+    for (const clientId of clients) {
+      //this is the socket of each client in the room.
+      const clientSocket = io.sockets.sockets.get(clientId);
+      users.push({ name: clientSocket.nickname, id: clientSocket.id });
+    }
+  } else {
+    users.length = 0;
+    socket.join("test");
+    const clients = socket.adapter.rooms.get("test");
+    console.log("users in test ===>", clients);
+    for (const clientId of clients) {
+      //this is the socket of each client in the room.
+      const clientSocket = io.sockets.sockets.get(clientId);
+      users.push({ name: clientSocket.nickname, id: clientSocket.id });
+    }
   }
+  // console.log(socket.rooms);
 
   socket.on("incoming user", () => {
     io.emit("added entry to userList", users);
@@ -44,17 +59,35 @@ io.on("connection", socket => {
     socket.broadcast.emit("clean alert typing");
   });
   socket.on("send PM", id => {
-    io.to(`${id}`).emit("yo ma gueule !");
+    console.log(id);
+    io.to(`${id}`).emit(
+      "received PM",
+      "Ceci est le début de votre conversation avec " + socket.nickname
+    );
+  });
+  socket.on("opening private room", text => {
+    console.log(text);
   });
   socket.on("disconnect", () => {
-    users.length = 0;
-    const clients = socket.adapter.rooms.get("room1");
-    if (clients) {
-      for (const clientId of clients) {
-        //this is the socket of each client in the room.
-        const clientSocket = io.sockets.sockets.get(clientId);
-
-        users.push({ name: clientSocket.nickname, id: clientSocket.id });
+    if (text === "undefined") {
+      users.length = 0;
+      const clients = socket.adapter.rooms.get("room1");
+      if (clients) {
+        for (const clientId of clients) {
+          //this is the socket of each client in the room.
+          const clientSocket = io.sockets.sockets.get(clientId);
+          users.push({ name: clientSocket.nickname, id: clientSocket.id });
+        }
+      }
+    } else {
+      users.length = 0;
+      const clients = socket.adapter.rooms.get("test");
+      if (clients) {
+        for (const clientId of clients) {
+          //this is the socket of each client in the room.
+          const clientSocket = io.sockets.sockets.get(clientId);
+          users.push({ name: clientSocket.nickname, id: clientSocket.id });
+        }
       }
     }
 
